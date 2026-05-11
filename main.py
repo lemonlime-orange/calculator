@@ -1,17 +1,25 @@
 import streamlit as st
 import math
+import random
+import plotly.express as px
+import pandas as pd
 
-st.set_page_config(page_title="Neon Engineering Calculator", page_icon="🧮", layout="centered")
+st.set_page_config(
+    page_title="Neon Multi App",
+    page_icon="🧮",
+    layout="centered"
+)
 
-# -------- 스타일 (간지 네온 UI) --------
+# -------- 스타일 --------
 st.markdown("""
 <style>
 body {
     background-color: #0a0a0f;
 }
+
 .block-container {
     padding: 1.5rem;
-    max-width: 420px;
+    max-width: 500px;
     margin: auto;
 }
 
@@ -49,85 +57,279 @@ button:hover {
     box-shadow: 0 0 10px #22c55e;
 }
 
+.sidebar .sidebar-content {
+    background-color: #020617;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# -------- 상태 --------
-if "expr" not in st.session_state:
-    st.session_state.expr = ""
-if "preview" not in st.session_state:
-    st.session_state.preview = ""
-if "mode" not in st.session_state:
-    st.session_state.mode = "DEG"
+# -------- 사이드바 --------
+st.sidebar.title("🧩 App Menu")
 
-# -------- 디스플레이 --------
-st.markdown(f'<div class="sub">{st.session_state.preview}</div>', unsafe_allow_html=True)
-st.markdown(f'<div class="display">{st.session_state.expr if st.session_state.expr else "0"}</div>', unsafe_allow_html=True)
+app = st.sidebar.radio(
+    "앱 선택",
+    ["계산기", "확률 시뮬레이터"]
+)
 
-# -------- 함수 --------
-def add(v):
-    st.session_state.expr += str(v)
+# =========================================================
+# 계산기 앱
+# =========================================================
+if app == "계산기":
 
-def clear():
-    st.session_state.expr = ""
-    st.session_state.preview = ""
+    # -------- 상태 --------
+    if "expr" not in st.session_state:
+        st.session_state.expr = ""
 
-def back():
-    st.session_state.expr = st.session_state.expr[:-1]
+    if "preview" not in st.session_state:
+        st.session_state.preview = ""
 
-def toggle():
-    st.session_state.mode = "RAD" if st.session_state.mode == "DEG" else "DEG"
+    if "mode" not in st.session_state:
+        st.session_state.mode = "DEG"
 
-def calc():
-    try:
-        exp = st.session_state.expr.replace("^", "**")
-        raw = st.session_state.expr
+    # -------- 디스플레이 --------
+    st.markdown(
+        f'<div class="sub">{st.session_state.preview}</div>',
+        unsafe_allow_html=True
+    )
 
-        if st.session_state.mode == "DEG":
-            exp = exp.replace("sin(", "math.sin(math.radians(")
-            exp = exp.replace("cos(", "math.cos(math.radians(")
-            exp = exp.replace("tan(", "math.tan(math.radians(")
+    st.markdown(
+        f'<div class="display">{st.session_state.expr if st.session_state.expr else "0"}</div>',
+        unsafe_allow_html=True
+    )
 
-        result = eval(exp)
-        st.session_state.preview = raw + " ="
-        st.session_state.expr = str(result)
-    except:
-        st.session_state.expr = "Error"
+    # -------- 함수 --------
+    def add(v):
+        st.session_state.expr += str(v)
 
-# -------- 상단 --------
-t1, t2, t3, t4 = st.columns(4)
-t1.button("C", on_click=clear, use_container_width=True)
-t2.button("⌫", on_click=back, use_container_width=True)
-t3.button("MODE", on_click=toggle, use_container_width=True)
-t4.button("√", on_click=lambda: add("math.sqrt("), use_container_width=True)
+    def clear():
+        st.session_state.expr = ""
+        st.session_state.preview = ""
 
-# -------- 함수 --------
-f1, f2, f3, f4 = st.columns(4)
-f1.button("sin", on_click=lambda: add("sin("), use_container_width=True)
-f2.button("cos", on_click=lambda: add("cos("), use_container_width=True)
-f3.button("tan", on_click=lambda: add("tan("), use_container_width=True)
-f4.button("^", on_click=lambda: add("^"), use_container_width=True)
+    def back():
+        st.session_state.expr = st.session_state.expr[:-1]
 
-f5, f6, f7, f8 = st.columns(4)
-f5.button("log", on_click=lambda: add("math.log10("), use_container_width=True)
-f6.button("ln", on_click=lambda: add("math.log("), use_container_width=True)
-f7.button("(", on_click=lambda: add("("), use_container_width=True)
-f8.button(")", on_click=lambda: add(")"), use_container_width=True)
+    def toggle():
+        st.session_state.mode = (
+            "RAD" if st.session_state.mode == "DEG" else "DEG"
+        )
 
-# -------- 숫자 --------
-nums = [
-    ["7","8","9","/"],
-    ["4","5","6","*"],
-    ["1","2","3","-"],
-    ["0",".","%","+"],
-]
+    def calc():
+        try:
+            exp = st.session_state.expr.replace("^", "**")
+            raw = st.session_state.expr
 
-for row in nums:
-    cols = st.columns(4)
-    for i,v in enumerate(row):
-        cols[i].button(v, on_click=add, args=(v,), use_container_width=True)
+            if st.session_state.mode == "DEG":
+                exp = exp.replace(
+                    "sin(",
+                    "math.sin(math.radians("
+                )
+                exp = exp.replace(
+                    "cos(",
+                    "math.cos(math.radians("
+                )
+                exp = exp.replace(
+                    "tan(",
+                    "math.tan(math.radians("
+                )
 
-# -------- 계산 --------
-st.button("=", on_click=calc, use_container_width=True)
+            result = eval(exp)
 
-st.caption("🔥 Neon Style Engineering Calculator")
+            st.session_state.preview = raw + " ="
+            st.session_state.expr = str(result)
+
+        except:
+            st.session_state.expr = "Error"
+
+    # -------- 상단 --------
+    t1, t2, t3, t4 = st.columns(4)
+
+    t1.button(
+        "C",
+        on_click=clear,
+        use_container_width=True
+    )
+
+    t2.button(
+        "⌫",
+        on_click=back,
+        use_container_width=True
+    )
+
+    t3.button(
+        f"{st.session_state.mode}",
+        on_click=toggle,
+        use_container_width=True
+    )
+
+    t4.button(
+        "√",
+        on_click=lambda: add("math.sqrt("),
+        use_container_width=True
+    )
+
+    # -------- 함수 --------
+    f1, f2, f3, f4 = st.columns(4)
+
+    f1.button(
+        "sin",
+        on_click=lambda: add("sin("),
+        use_container_width=True
+    )
+
+    f2.button(
+        "cos",
+        on_click=lambda: add("cos("),
+        use_container_width=True
+    )
+
+    f3.button(
+        "tan",
+        on_click=lambda: add("tan("),
+        use_container_width=True
+    )
+
+    f4.button(
+        "^",
+        on_click=lambda: add("^"),
+        use_container_width=True
+    )
+
+    f5, f6, f7, f8 = st.columns(4)
+
+    f5.button(
+        "log",
+        on_click=lambda: add("math.log10("),
+        use_container_width=True
+    )
+
+    f6.button(
+        "ln",
+        on_click=lambda: add("math.log("),
+        use_container_width=True
+    )
+
+    f7.button(
+        "(",
+        on_click=lambda: add("("),
+        use_container_width=True
+    )
+
+    f8.button(
+        ")",
+        on_click=lambda: add(")"),
+        use_container_width=True
+    )
+
+    # -------- 숫자 --------
+    nums = [
+        ["7", "8", "9", "/"],
+        ["4", "5", "6", "*"],
+        ["1", "2", "3", "-"],
+        ["0", ".", "%", "+"],
+    ]
+
+    for row in nums:
+        cols = st.columns(4)
+
+        for i, v in enumerate(row):
+            cols[i].button(
+                v,
+                on_click=add,
+                args=(v,),
+                use_container_width=True
+            )
+
+    # -------- 계산 --------
+    st.button(
+        "=",
+        on_click=calc,
+        use_container_width=True
+    )
+
+    st.caption("🔥 Neon Style Engineering Calculator")
+
+
+# =========================================================
+# 확률 시뮬레이터 앱
+# =========================================================
+elif app == "확률 시뮬레이터":
+
+    st.title("🎲 Probability Simulator")
+    st.caption("Plotly 기반 확률 시뮬레이션")
+
+    sim_type = st.selectbox(
+        "시뮬레이션 선택",
+        ["주사위", "동전"]
+    )
+
+    trials = st.number_input(
+        "시행 횟수",
+        min_value=1,
+        max_value=100000,
+        value=100
+    )
+
+    if st.button("시뮬레이션 실행"):
+
+        # -------- 주사위 --------
+        if sim_type == "주사위":
+
+            results = [
+                random.randint(1, 6)
+                for _ in range(trials)
+            ]
+
+            counts = {
+                i: results.count(i)
+                for i in range(1, 7)
+            }
+
+            df = pd.DataFrame({
+                "눈": list(counts.keys()),
+                "횟수": list(counts.values())
+            })
+
+            fig = px.bar(
+                df,
+                x="눈",
+                y="횟수",
+                title=f"{trials}번 주사위 시뮬레이션"
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True
+            )
+
+        # -------- 동전 --------
+        elif sim_type == "동전":
+
+            results = [
+                random.choice(["앞면", "뒷면"])
+                for _ in range(trials)
+            ]
+
+            counts = {
+                side: results.count(side)
+                for side in ["앞면", "뒷면"]
+            }
+
+            df = pd.DataFrame({
+                "결과": list(counts.keys()),
+                "횟수": list(counts.values())
+            })
+
+            fig = px.pie(
+                df,
+                names="결과",
+                values="횟수",
+                title=f"{trials}번 동전 시뮬레이션"
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True
+            )
+
+    st.caption("📊 Probability Visualization with Plotly")
